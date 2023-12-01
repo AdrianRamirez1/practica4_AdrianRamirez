@@ -1,0 +1,47 @@
+#!/bin/bash
+
+# Comprobar si el usuario es root
+if [[ $EUID -ne 0 ]]; then
+    echo "Este script debe ser ejecutado como root" 
+    exit 1
+fi
+
+# Leer el contenido del fichero de entrada "paquetes.txt"
+while IFS=: read -r package action; do
+    # Comprobar la acción a realizar
+    case $action in
+        "remove"|"r")
+            # Comprobar si el paquete está instalado
+            if whereis "$package" | grep bin | wc -l | grep -q "^[1-9]+\$"; then
+                # Desinstalar el software
+                sudo apt remove "$package"
+                sudo apt purge "$package"
+                echo "Desinstalando $package"
+            else
+                echo "$package no está instalado"
+            fi
+            ;;
+        "install"|"i")
+            # Comprobar si el paquete no está instalado
+            if ! whereis "$package" | grep bin | wc -l | grep -q "^[1-9]+\$"; then
+                # Instalar el software
+                sudo apt install "$package"
+                echo "Instalando $package"
+            else
+                echo "$package ya está instalado"
+            fi
+            ;;
+        "status"|"s")
+            # Comprobar si el paquete está instalado
+            if whereis "$package" | grep bin | wc -l | grep -q "^[1-9]+\$"; then
+                echo "$package está instalado"
+            else
+                echo "$package no está instalado"
+            fi
+            ;;
+        *)
+            echo "Acción inválida para el paquete $package: $action"
+            ;;
+    esac
+done < paquetes.txt
+
